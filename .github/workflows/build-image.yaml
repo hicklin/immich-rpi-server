@@ -11,6 +11,17 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -22,8 +33,7 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Build SD Image
-        run: |
-          nix build .#rpi-image
+        run: nix build .#rpi-image
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
