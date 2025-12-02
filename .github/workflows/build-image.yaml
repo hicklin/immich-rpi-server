@@ -1,0 +1,25 @@
+name: Build RPi Image
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build SD Image
+        run: |
+          nix build .#rpi-image
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: result/sd-image/*.img.zst
