@@ -1,12 +1,16 @@
 { config, pkgs, lib, ... }:
 
 let
-  user = "hicklin";
+  user = "admin";
   password = "testing"; # Access to the Raspberry Pi
   hostname = "immich";
   immich-server = pkgs.writeShellScriptBin "immich-server" (builtins.readFile ./scripts/immich-server.sh);
   immich-backup = pkgs.writeShellScriptBin "immich-backup" (builtins.readFile ./scripts/immich-backup.sh);
 in {
+
+  imports = [
+    ./zsh.nix
+  ];
 
   boot = {
     # This linux_rpi4 kernel dose not work for UART. See issue https://github.com/NixOS/nixpkgs/issues/465278
@@ -19,7 +23,7 @@ in {
         "console=tty0"
         "nohibernate"
         "loglevel=7"
-      "lsm=landlock,yama,bpf"
+        "lsm=landlock,yama,bpf"
     ];
     initrd.availableKernelModules = [ "xhci_pci" "usbhid" "usb_storage" ];
     loader = {
@@ -36,7 +40,13 @@ in {
     };
   };
 
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  # Needed for the SD card image build.
+  nix.nixPath = [
+    "nixpkgs=/nix/var/nix/profiles/per-user/root/channels/nixos"
+    "nixos-config=/etc/nixos/configuration.nix"
+  ];
+  
+  nix.settings.experimental-features = [ "nix-command" ];
 
   networking = {
     hostName = hostname;
@@ -44,7 +54,7 @@ in {
       enable = true;
       allowedTCPPorts = [ 2283 ];
       # required for Tailscale
-      checkReversePath = "loose";  # Required for Tailscale exit nodes
+      checkReversePath = "loose";
       trustedInterfaces = [ "tailscale0" ];
     };
   };
@@ -68,18 +78,25 @@ in {
 
   services.openssh.enable = true;
   services.tailscale.enable = true;
+
   # More settings can be found here: https://wiki.nixos.org/wiki/Immich
   services.immich = {
     enable = true;
     # use `host = "::";` for IPv6.
     host = "0.0.0.0";
     port = 2283;
+    mediaLocation = "/mnt/immich_data/immich";
     secretsFile = "/mnt/immich_data/secrets/immich-secrets";
   };
 
+  users.users.immich = {
+    # Add immich user to users group, allowing immich to write to our external drive.
+    extraGroups = [ "users" ];
+  };
+
   # We do not want immich to start on boot since we need to first decrypt the drive.
-  # Remove this line if your immich drive does not require decryption.
-  systemd.user.units.immich.wantedBy = lib.mkForce [];
+  # Remove this line if your immich drive does not require manual decryption.
+  systemd.services.immich-server.wantedBy = lib.mkForce [];
 
   systemd.timers."immich-backup" = {
     wantedBy = [ "timers.target" ];
@@ -107,10 +124,6 @@ in {
       extraGroups = [ "wheel" ];
     };
   };
-
-  imports = [
-    ./zsh.nix
-  ];
 
   hardware.enableRedistributableFirmware = true;
   system.stateVersion = "23.11";
