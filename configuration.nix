@@ -10,6 +10,9 @@ in {
 
   imports = [
     ./zsh.nix
+    # Aggressive size reduction, necessary for keeping release image small
+    # You can remove `size_reduction.nix` when rebuilding on target.
+    ./size_reduction.nix
   ];
 
   boot = {
@@ -64,9 +67,9 @@ in {
     cryptsetup
     rustic
     vim # basic file editing
-    bat # a flying cat
+    bat # cat with wings
     htop # interactive process viewer
-    gtop # graphical system monitoring dashboard for the terminal
+    bottom # graphical system monitoring dashboard for the terminal
     immich-server # Helper script to run immich
     immich-backup # Helper script to backup immich data
   ];
