@@ -11,16 +11,24 @@ The specific setup descried protects against the following treats.
 You may make modifications to some aspects of this setup if your treat model is different. For example, if physical access to the device is not a concern and you want the convenience of automatic setup on boot, you may choose to not encrypt the external drive.
 
 > [!CAUTION]
-> You will be taking back control of your media assets. You will be solely responsible for keeping them safe and accessible.
+> You will be taking back control of your media assets. You will be solely responsible for keeping them safe and accessible. This process requires a number of credentials to be created, without which no one, including yourself, can get access to this data.
 > 
-> This process requires a number of credentials to be created, without which no one, including yourself, can get access to this data. Ensure that these credentials are stored securely. All instances where such credentials are create contain a similar `Caution` note.
+> Ensure that these credentials are stored securely. All instances where important credentials are create contain a similar `Caution` note. The following is a summary of all the necessary passwords so you can generate them in you password manager before you start the process.
+> | Password                 | Step  | notes     |
+> |--------------------------|-------|-----------|
+> | External disk encryption | 1     |           |
+> | RPi login                | 2.6.3 |           |
+> | Immich database          | 3.1.6 | A-Za-z0-9 |
+> | Immich admin user        | 3.4   |           |
+> | Backup data encryption   | 4.2   |           |
 
 > [!NOTE]
 > The following instructions assume you are working on a Linux based OS. If you want to follow along on a Linux based OS, you can run one from a live USB without installing it on your machine.
 
 # Requirements
 
-- A Raspberry Pi 4/5 (min 4 GB RAM) + micro SD card.
+- A Raspberry Pi 4 (min 4 GB RAM) + micro SD card. Not tested on RPi 5.
+- Raspberry Pi power supply.
 - External storage, enough to hold all your Photos and Videos (assets).
 - A cloud storage service - used for backups.
 - Choose one:
@@ -84,21 +92,21 @@ This project uses the declarative Linux operating system (OS), NixOS. This allow
    - Alternatively, you can connect a screen, keyboard and mouse and login to the RPi that way with the user `admin` and password `testing`.
 6. Once logged in on the RPi
    1. Clone this repository: 
-      ```
+      ```bash
       git clone https://github.com/hicklin/immich-rpi-server.git
       ```
    2. Create a symbolic link (shortcut), for NixOS configuration:
-      ```
+      ```bash
       sudo ln -s ~/immich-rpi-server/configuration.nix /etc/nixos/configuration.nix
       ```
    3. Change the RPi login password by changing the `hashedPassword` in `immich-rpi-server/configuration.nix`
       - You can generate a hash with ` mkpasswd -m sha-512 <your secure password>`. Note the space at the start. This omits this command from being logged in history and leaking your password.
    4. Update channels:
-      ```
+      ```bash
       sudo nix-channel --update
       ```
    5. Update the OS (updating the password):
-      ```
+      ```bash
       sudo nixos-rebuild switch
       ```
 
@@ -116,23 +124,33 @@ We will finish setting up immich, install the companion app on our phone and acc
 
 Immich is already installed and configured on the RPi, however it requires a secrets file to operate. Follow these one-time steps to set this up.
 
-1. Decrypt and mount the external drive.
-   ```
+1. Create a mount location for our drive.
+   ```bash
    sudo install -d -m 755 -o ${USER} -g users /mnt/immich_drive
+   ```
+2. Identify the path to the drive with `lsblk`. The path is `/dev/<name>` where `<name>` is the first column of `lsblk`. E.g. `/dev/sda` or `/dev/sda1` if partitioned.
+3. Decrypt and mount the external drive.
+   ```bash
    immich-server --immich-drive /dev/sda
    ```
-2. Copy the example secrets file to your encrypted drive.
-   ```
+4. Create a `secrets` folder in the encrypted drive.
+   ```bash
    install -d -m 755 -o ${USER} -g users /mnt/immich_drive/secrets
+   ```
+5. Copy the example secrets file to your encrypted drive.
+   ```bash
    cp ~/immich-rpi-server/immich-secrets.example /mnt/immich_drive/secrets/immich-secrets
    ```
-3. **Change the `DB_PASSWORD` value** in `/mnt/immich_drive/secrets/immich-secrets`.
-4. Start immich
-   ```
+6. **Change the `DB_PASSWORD` value** in `/mnt/immich_drive/secrets/immich-secrets`.
+7. Create the directory for immich data in the encrypted drive with the correct permissions.
+   ```bash
    sudo install -d -m 755 -o immich -g users /mnt/immich_drive/immich_data
+   ```
+8. Start immich
+   ```bash
    immich-server --start --no-decryption
    ```
-5. You can use `journalctl -u immich-server -f` to follow the logs from the immich service.
+9. You can use `journalctl -u immich-server -f` to follow the logs from the immich service.
 
 > [!CAUTION]
 > Securely store the `DB_PASSWORD`. This is necessary to recover the database which is essential to make sense of our backup.
@@ -166,7 +184,8 @@ If you are embarking on this project, you are likely a secure conscious individu
 
 `rustic` is a fast and secure backup program. It encrypts and syncs our data to a remote location. We will use `restic` to achieve data with a similar security posture to Proton Drive on non-zero-thrust services like Backblaze, GCP, AWS, etc.
 
-We need to backup the following essential directories from `/mnt/immich_drive/immich_data/library/`
+We need to backup the following essential directories from `/mnt/immich_drive/immich_data/`
+- `library`: Not usually used
 - `upload`: all original assets
 - `profile`: user profiles
 - `backups`: database backups
@@ -192,30 +211,34 @@ Rustic requires a `.toml` configuration file with credentials to access your sto
 > [!CAUTION]  
 > The password in `[repository]` is what's used to encrypt/decrypt the backup data. **Do not loose this** otherwise you will not be able to access your backup data.
 
-> [!NOTE]  
-> The contents of this config contains all the necessary information to access your private data. Hence, it's important for us to keep this secure. To do this, we will store this file in the encrypted storage drive in a `secrets` directory and link it in the required directory.
-> ```bash
-> mkdir -p .config/rustic
-> ln -s /mnt/immich_drive/secrets/rustic.toml ~/.config/rustic
-> ```
+The contents of this config contains all the necessary information to access your private data. Hence, it's important for us to keep this secure. To do this, we will store this file in the `secrets` directory in the encrypted drive and link it in the required directory.
+
+1. Create the dir for the rustic configuration.
+   ```bash
+   sudo install -d -m 755 -o ${USER} -g users /etc/rustic
+   ```
+2. Link the rustic configuration to the required location.
+   ```bash
+   ln -s /mnt/immich_drive/secrets/rustic.toml /etc/rustic/rustic.toml
+   ```
 
 #### 3. Initialise the repository - One time
 
 This step initialises the backup location for rustic. We only need to run this once.
 
-```
+```bash
 rustic init
 ```
 
 #### 4. Manual backup
 
-Our nix configuration provides a helper script for backing up our data.
+Our nix configuration provides a service for backing up our data.
 
-```
-immich-backup
+```bash
+sudo systemctl start immich-backup
 ```
 
-This script will encrypt and backup the essential directories describe earlier.
+This service will run once and will encrypt and backup our data.
 
 #### 5. Schedule backups
 
@@ -229,7 +252,7 @@ Tailscale allows us to create a VPN that behaves similar to our local network, i
 
 1. **Create an account** at https://login.tailscale.com/start.
 2. **Register the RPi**. Tailscale is already installed on our RPi thanks to our NixOS configuration. To register the RPi, call this command and follow the URL output.
-   ```
+   ```bash
    sudo tailscale up
    ```
 3. Install the tailscale app on you phone: https://tailscale.com/download

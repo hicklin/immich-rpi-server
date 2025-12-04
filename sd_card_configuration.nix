@@ -73,6 +73,12 @@ in {
     };
   };
 
+  # Disable bluetooth
+  hardware.bluetooth = {
+    enable = false;
+    powerOnBoot = false;
+  };
+
   # Size reduction, necessary for keeping release image small
   documentation.enable = false;
   documentation.nixos.enable = false;

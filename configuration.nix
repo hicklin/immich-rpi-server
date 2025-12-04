@@ -127,6 +127,12 @@ in {
     };
   };
 
+  # Disable bluetooth
+  hardware.bluetooth = {
+    enable = false;
+    powerOnBoot = false;
+  };
+
   hardware.enableRedistributableFirmware = true;
   system.stateVersion = "23.11";
 }
