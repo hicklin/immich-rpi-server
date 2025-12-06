@@ -183,13 +183,13 @@ Immich is already installed and configured on the RPi, however it requires a sec
 6. **Change the `DB_PASSWORD` value** in `/mnt/immich_drive/secrets/immich-secrets`.
    > [!CAUTION]
    > Securely store the `DB_PASSWORD`. This is necessary to recover the database which is essential to make sense of our backup.
-7. Create the directory for immich data in the encrypted drive with the correct permissions.
-   ```bash
-   sudo install -d -m 755 -o immich -g users /mnt/immich_drive/immich_data
-   ```
-8. Create the directory for immich postgres database in the encrypted drive with the correct permissions.
+7. Create the directory for immich postgres database in the encrypted drive with the correct permissions.
    ```bash
    sudo install -d -m 750 -o postgres -g users /mnt/immich_drive/postgres
+   ```
+8. Create the directory for immich data in the encrypted drive with the correct permissions.
+   ```bash
+   sudo install -d -m 755 -o immich -g users /mnt/immich_drive/immich_data
    ```
 9.  Start immich
       ```bash
@@ -371,10 +371,10 @@ journalctl -xeu immich-backup.service
 # Disaster recovery
 
 This section covers recovering your immich setup from backups. These instructions cover two distinct situations.
-- **Complete recovery**: Setting up the external drive, RPi and getting data backed-up on cloud storage.
-- **Recovery with drive data**: The external drive data is intact and can be used as is. Setting up of RPi.
+- **Recovery from cloud storage**: Setting up the external drive, RPi and getting data backed-up on cloud storage.
+- **Recovery from external drive**: The external drive data is intact and can be used as is. Setting up of RPi.
 
-## Complete recovery
+## Recovery from cloud storage
 
 1. Encrypt the new drive following [setup step 1](#1-encrypt-external-drive).
 2. Setup the RPi following [setup step 2](#2-raspberry-pi-setup).
@@ -388,8 +388,25 @@ This section covers recovering your immich setup from backups. These instruction
    ```
    rustic copy --target /mnt/immich_drive/immich_data
    ```
-7. Restore the database from the latest backup in `/immich_data/backups`
-   1. todo...
+7. Restore the database from the latest backup in `immich_data/backups`
+   1. Start postgres, the database
+   ```bash
+   sudo systemctl start postgresql
+   ```
+   2. restore backup
+   ```bash
+   gunzip -c /mnt/immich_drive/immich_data/backups/<latest dump> | sudo -u postgres psql -d postgres
+   ```
+   > [!IMPORTANT]
+   > If your database backups where created from a database with a user than is not `immich`, such as the default docker immich configuration where `DB_DATABASE_NAME=postgres`, grant equivalent permissions to `immich` as that user with:
+   ```bash
+   sudo -u postgres psql -c "GRANT <DB_DATABASE_NAME of old DB> TO immich;"
+   ```
+   3. Ensure correct permissions to immich_data
+   ```bash
+   sudo chown -R immich:users /mnt/immich_drive/immich_data
+   ```
+
 8. Start immich
    ```bash
    immich-server --start --no-decryption
@@ -403,9 +420,12 @@ This section covers recovering your immich setup from backups. These instruction
     ```
 11. Setup remote access following [setup step 5](#5-remote-access).
 
-## Recover with drive data
+## Recovery from external drive
 
-These instruction are for when the external drive already contains all the immich data for a previous server instance.
+These instruction are for when the external drive already contains all the immich data of a previous server instance.
+
+> [!CAUTION]
+> For this to work, the old and new postgres versions will need to match. There may be other nuances that might cause this to fail. If it does, you can always use the data in the drive to backup the database. You can follow the [migration processing off RPi](docs/migration-processing-off-rpi.md) instruction starting from step 8.
 
 1. Setup the RPi following [setup step 2](#2-raspberry-pi-setup).
 2. Setup immich on RPi following [setup step 3.1](#31-raspberry-pi) up to and including step 3.

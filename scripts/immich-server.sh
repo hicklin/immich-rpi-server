@@ -76,7 +76,9 @@ if [ "$STOP_SERVER" = true ]; then
     fi
     
     printf "Stopping immich server...\n"
+    sudo systemctl stop immich-machine-learning
     sudo systemctl stop immich-server
+    sudo systemctl stop postgresql
     exit 0
 fi
 
@@ -96,5 +98,7 @@ fi
 # Start immich server
 if [ "$START" = true ]; then
     printf "Starting immich server...\n"
+    sudo systemctl start postgresql
     sudo systemctl start immich-server
+    sudo systemctl start immich-machine-learning
 fi

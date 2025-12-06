@@ -101,9 +101,12 @@ in {
     extraGroups = [ "users" ];
   };
 
-  # We do not want immich to start on boot since we need to first decrypt the drive.
-  # Remove this line if your immich drive does not require manual decryption.
+  # We do not want immich and postgres to start on boot since we need to first decrypt the drive.
+  # You can remove these lines if your immich drive does not require manual decryption.
+  systemd.services.postgresql.wantedBy = lib.mkForce [];
+  systemd.targets.postgresql.wantedBy = lib.mkForce [];
   systemd.services.immich-server.wantedBy = lib.mkForce [];
+  systemd.services.immich-machine-learning.wantedBy = lib.mkForce [];
 
   systemd.timers."immich-backup" = {
     wantedBy = [ "timers.target" ];
