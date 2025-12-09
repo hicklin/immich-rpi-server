@@ -1,9 +1,10 @@
 # immich-rpi-server
 > A NixOS based Immich server on Raspberry Pi
 
-This project aims to provide a cheap and simple way to set up and run an [Immich](https://immich.app/) instance, empowering you to move away from BigTech without needing a computer degree. Having said that, you will be running your own server which will require understanding of some basic concepts. I attempt to provide sufficient documentation and explanations to help you on your way to regain sovereignty over your personal data.
+This project aims to provide a cheap and simple way to set up and run an [Immich](https://immich.app/) instance, empowering you to move away from BigTech without needing a computer degree. Having said that, you will be running your own server which will require understanding of some basic concepts. This project attempts to provide sufficient documentation and explanations to help you on your way to regain sovereignty over your personal data.
 
 The specific setup descried protects against the following treats.
+- Third-party companies accessing personal media assets.
 - Remote internet access of server and data: Requires small overhead [maintaining OS updates](#os-updates).
 - Access from local network: Requires setting strong passwords.
 - Physical access to external storage and RPi SD card: Requires [encryption of external drive](#1-encrypt-external-drive).
@@ -13,7 +14,7 @@ You may make modifications to some aspects of this setup if your treat model is 
 > [!CAUTION]
 > You will be taking back control of your media assets. You will be solely responsible for keeping them safe and accessible. This process requires a number of credentials to be created, without which no one, including yourself, can get access to this data.
 > 
-> Ensure that these credentials are stored securely. All instances where important credentials are create contain a similar `Caution` note. The following is a summary of all the necessary passwords so you can generate them in you password manager before you start the process.
+> Ensure that these credentials are stored securely. All instances where important credentials are create contain a similar caution note. Below is a summary of all the necessary passwords so you can generate them in you password manager before you start the process.
 > | Password                 | Step  | notes     |
 > |--------------------------|-------|-----------|
 > | External disk encryption | 1     |           |
@@ -23,7 +24,7 @@ You may make modifications to some aspects of this setup if your treat model is 
 > | Backup data encryption   | 4.2   |           |
 
 > [!NOTE]
-> The following instructions assume you are working on a Linux based OS. If you want to follow along on a Linux based OS, you can run one from a live USB without installing it on your machine.
+> The following instruction have been devised and tested on a Linux based OS. Instructions for other OSs may be incomplete. If you want to follow along on a Linux based OS, you can run one from a live USB without installing it on your machine.
 
 # Table of contents
 
@@ -59,13 +60,12 @@ You may make modifications to some aspects of this setup if your treat model is 
 - Raspberry Pi power supply.
 - External storage, enough to hold all your Photos and Videos (assets).
 - A cloud storage service - used for backups.
-- Choose one:
-  - Screen, keyboard and mouse available to connect to the RPi. RPi has a mini-HDMI connector.
-  - FTDI cable - If you prefer to communicate via terminal.
+- Optional:
+  - Screen, keyboard and mouse available to connect to the RPi. RPi has a micro-HDMI connector.
 
 # The big picture
 
-The diagram below describes the architecture of our server and how different parts of our system communicate with each other. The following sections describe each part and any required setup.
+The diagram below describes the architecture of our immich RPi server and how different parts of our system communicate with each other.
 
 ![data-flow-diagram](docs/assets/data-flow-diagram.png)
 
@@ -96,9 +96,8 @@ The following steps setup a RPi immich server **with no media assets**. Followin
 > [!IMPORTANT]
 > If you have a large amount of assets to migrate, the RPi may have a hard time processing the migrated assets.
 > Immich runs CPU intensive encoding and AI algorithms on your assets. This may cause your RPi to overheat and power down.
-> One solution to this is to install a heat sink.
 > 
-> A better solution is to setup a local immich instance on a more powerful machine to import and process photos before setting up the RPi. You can follow the [migration processing off RPi](docs/migration-processing-off-rpi.md) setup steps for this solution.
+> One solution to this is to install a heat sink and manage jobs in the `Administration > Jobs` page. A better solution is to setup a local immich instance on a more powerful machine to import and process photos before setting up the RPi. You can follow the [migration processing off RPi](docs/migration-processing-off-rpi.md) setup steps for this solution.
 
 ## 1. Encrypt external drive
 
@@ -131,7 +130,7 @@ This project uses the declarative Linux operating system (OS), NixOS. This allow
    2. Login to the RPi from your machine with `ssh admin@<IP address>` and password `testing`. 
    - Alternatively, you can connect a screen, keyboard and mouse and login to the RPi that way with the user `admin` and password `testing`.
    - The first time you login, you will be prompted to configure zsh. You can use option `0`.
-6. Once logged in on the RPi
+6. Once logged in the RPi
    1. Clone this repository: 
       ```bash
       git clone https://github.com/hicklin/immich-rpi-server.git
@@ -220,11 +219,11 @@ It is essential that we backup our assets. Our drive may fail, get damaged or st
 
 The most resilient backups are cloud storage services. However, we want to ensure that our data is encrypted and only accessible by us. To achieve this we have two options; use a **trusted end-to-end encryption and zero-trust storage service** or **encrypt the data ourselves**.
 
-If you are embarking on this project, you are likely a secure conscious individual and may already have [Proton Mail](https://proton.me/mail). The payed plan comes with 500 GB of Proton Drive which is an end-to-end encryption and zero-trust storage service. Unfortunately, Proton Drive do not currently provide a robust solution for Linux. If you are interested in trying to use this, read [Proton Drive Backups](proton-drive-backups.md).
+If you are embarking on this project, you are likely a secure conscious individual and may already have [Proton Mail](https://proton.me/mail). The paid plan comes with 500 GB of Proton Drive which is an end-to-end encryption and zero-trust storage service. Unfortunately, Proton Drive do not currently provide a robust solution for Linux. If you are interested in trying to use this, read [Proton Drive Backups](proton-drive-backups.md).
 
 ### Encrypted backups with [`rustic`](https://rustic.cli.rs/docs/intro.html)
 
-`rustic` is a fast and secure backup program. It encrypts and syncs our data to a remote location. We will use `restic` to achieve data with a similar security posture to Proton Drive on non-zero-thrust services like Backblaze, GCP, AWS, etc.
+`rustic` is a fast and secure backup program. It encrypts and syncs our data to a remote location. We will use `rustic` to achieve data with a similar security posture to Proton Drive on non-zero-thrust services like Backblaze, GCP, AWS, etc.
 
 We need to backup the following essential directories from `/mnt/immich_drive/immich_data/`
 - `library`: Used if storage templates are enabled
@@ -283,6 +282,7 @@ This service will run once and will encrypt and backup our data. You can check t
 journalctl -xeu immich-backup.service
 ```
 
+To monitor the progress of the backup use `rustic repoinfo`.
 
 #### 5. Schedule backups
 
@@ -315,15 +315,11 @@ The [tailscale dashboard](https://login.tailscale.com/admin/machines) shows all 
 
 If you are migrating from other photo management services, have a look at [immich-go](https://github.com/simulot/immich-go/tree/main) for automation.
 
-> [!CAUTION]
-> This tool is still an early version. Make sure to confirm that correct and full migration is achieved.
-
 > [!IMPORTANT]
 > If you have a large amount of assets to migrate, the RPi may have a hard time processing the migrated assets.
 > Immich runs CPU intensive encoding and AI algorithms on your assets. This may cause your RPi to overheat and power down.
-> One solution to this is to install a heat sink.
 > 
-> A better solution is to setup a local immich instance on a more powerful machine to import and process photos before setting up the RPi. You can follow the [migration processing off RPi](docs/migration-processing-off-rpi.md) setup steps for this solution.
+> One solution to this is to install a heat sink and manage jobs in the `Administration > Jobs` page. A better solution is to setup a local immich instance on a more powerful machine to import and process photos before setting up the RPi. You can follow the [migration processing off RPi](docs/migration-processing-off-rpi.md) setup steps for this solution.
 
 
 # On reboot
@@ -384,9 +380,9 @@ This section covers recovering your immich setup from backups. These instruction
    sudo systemctl stop immich-backup.timer
    ```
 5. Configure `rustic` following [setup step 4](#4-configure-backups), up to and including step 2.
-6. Recover the data from the cloud
+6. Recover the data from the cloud. **Note** You can add `--dry-run` to see what would be restored.
    ```
-   rustic copy --target /mnt/immich_drive/immich_data
+   rustic restore latest /mnt/immich_drive/immich_data
    ```
 7. Restore the database from the latest backup in `immich_data/backups`
    1. Start postgres, the database
@@ -398,7 +394,7 @@ This section covers recovering your immich setup from backups. These instruction
    gunzip -c /mnt/immich_drive/immich_data/backups/<latest dump> | sudo -u postgres psql -d postgres
    ```
    > [!IMPORTANT]
-   > If your database backups where created from a database with a user than is not `immich`, such as the default docker immich configuration where `DB_DATABASE_NAME=postgres`, grant equivalent permissions to `immich` as that user with:
+   > If your database backups where created from a database with a user other than `immich`, such as the default docker immich configuration where `DB_DATABASE_NAME=postgres`, grant equivalent permissions to `immich` as that user with:
    ```bash
    sudo -u postgres psql -c "GRANT <DB_DATABASE_NAME of old DB> TO immich;"
    ```
@@ -406,7 +402,6 @@ This section covers recovering your immich setup from backups. These instruction
    ```bash
    sudo chown -R immich:users /mnt/immich_drive/immich_data
    ```
-
 8. Start immich
    ```bash
    immich-server --start --no-decryption

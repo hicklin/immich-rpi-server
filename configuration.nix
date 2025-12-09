@@ -66,6 +66,7 @@ in {
     cryptsetup
     rustic
     vim # basic file editing
+    tmux # terminal multiplexer
     bat # cat with wings
     htop # interactive process viewer
     bottom # graphical system monitoring dashboard for the terminal
@@ -120,8 +121,9 @@ in {
   systemd.services."immich-backup" = {
     path = [ pkgs.rustic ];
     serviceConfig = {
-      Type = "oneshot";
+      Type = "simple";
       ExecStart = "${immich-backup}/bin/immich-backup";
+      TimeoutStopSec = 60;
     };
     description = "Immich backup service";
   };
