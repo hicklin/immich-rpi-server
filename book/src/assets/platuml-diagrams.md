@@ -1,5 +1,5 @@
 ```plantuml
-rectangle "home network" #line.dashed {
+rectangle "home network" {
 	storage "encrypted external storage" as storage {
 		database "immich\ndatabase" as db
 		collections "immich\ndata" as data
@@ -23,8 +23,8 @@ RPi <-left-> storage : USB
 RPi <-- "remote admin" : tailscale
 
 immich <--> "remote phone" : tailscale
-immich <-> "home pc" : "IP:2283"
+immich <-> "home pc" : "immich.local:2283"
 
-cloud "cloud\nstorage" as cloud
+cloud "encrypted\ncloud\nstorage" as cloud
 data --> cloud : rclone/\nrustic
 ```
