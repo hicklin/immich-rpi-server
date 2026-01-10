@@ -2,7 +2,7 @@
 
 This project aims to provide a cheap and simple way to set up and run an [Immich](https://immich.app/) instance, empowering you to move away from BigTech without needing a computer degree. Having said that, you will be running your own server which will require an understanding of some basic concepts. This project attempts to provide sufficient documentation and explanations to help you on your way to regain sovereignty over your personal data.
 
-The primary setup descried aims to protect against the following treats.
+The primary setup described aims to protect against the following treats.
 - Third-party companies accessing personal media assets.
 - Remote internet access of server and data. Requires small overhead [maintaining OS updates](./management/3-maintenance.md#os-updates).
 - Access from local network. Requires setting strong passwords.

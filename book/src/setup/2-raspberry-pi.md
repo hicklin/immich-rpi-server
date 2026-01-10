@@ -10,7 +10,7 @@ This project uses the declarative Linux operating system (OS), NixOS. This allow
    - Start from the [latest vanilla NixOS image](../alternative-setups/3-install-from-vanilla-image.md).
 2. Flash the RPi image on to an SD card using your favourite flashing tool; `rpi-imager`, `balena-etcher` or `dd`:
    ```
-   sudo dd if=<path to image>.img of=<path to drive> bs=16M status=progress
+   sudo dd if=<path to image>.img of=<path to drive> bs=16M status=progress oflag=dsync
    ```
 3. Plug-in an Ethernet cable.
 4. Place the SD card in your RPi and power it.

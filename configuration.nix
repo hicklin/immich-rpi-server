@@ -13,8 +13,10 @@ in {
 
   imports = [
     ./zsh.nix
+    # ./lan-immich.nix
+    ./expose-immich.nix
   ];
-
+  
   boot = {
     # This linux_rpi4 kernel dose not work for UART. See issue https://github.com/NixOS/nixpkgs/issues/465278
     # Switching to vanilla kernel.
@@ -53,13 +55,7 @@ in {
 
   networking = {
     hostName = hostname;
-    firewall = {
-      enable = true;
-      allowedTCPPorts = [ 2283 ];
-      # required for Tailscale
-      checkReversePath = "loose";
-      trustedInterfaces = [ "tailscale0" ];
-    };
+    firewall.enable = true;
   };
 
   environment.systemPackages = with pkgs; [ 
@@ -95,8 +91,6 @@ in {
   # More settings can be found here: https://wiki.nixos.org/wiki/Immich
   services.immich = {
     enable = true;
-    # use `host = "::";` for IPv6.
-    host = "0.0.0.0";
     port = 2283;
     mediaLocation = "/mnt/immich_drive/immich_data";
     secretsFile = "/mnt/immich_drive/secrets/immich-secrets";

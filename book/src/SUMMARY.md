@@ -21,5 +21,6 @@
   - [Proton Drive Backup](./alternative-setups/4-proton-drive-backups.md)
 - [Optional Extras](./optional-extras/0-optional-extras.md)
   - [Harden RPi with SSH keys](./optional-extras/1-harden-rpi-with-ssh-keys.md)
+  - [Expose Immich to the internet](./optional-extras/2-expose-immich.md)
 - [Known Issues](./known-issues.md)
 - [Support](./support.md)

@@ -1,0 +1,41 @@
+# Caddy configuration for remote access.
+# Use `tailscale funnel --bg --tcp 443 tcp://localhost:<virtualHosts port>` to forward https connections
+# to your tailscale URL to caddy. Set virtualHosts port to match the port set in virtualHosts
+#
+# This configurations only allows full server access if a valid mTLS cert is provided, otherwise,
+# only access is limited to photo sharing APIs.
+
+# Define client certificate validation
+tls /var/lib/caddy/cert.pem /var/lib/caddy/key.pem {
+	client_auth {
+		# DO NOT set to require, otherwise any cert will pass authentication
+		mode verify_if_given
+		trust_pool file {
+			pem_file /var/lib/immich-certs/ca-cert.pem
+		}
+	}
+}
+
+# With cert = full access
+# @authenticated expression {http.request.tls.client.issuer} == "CN=MyCA,O=MyOrg,C=US"   
+@authenticated { expression {http.request.tls.client.issuer} != null }
+handle @authenticated {
+	reverse_proxy localhost:2283
+}
+
+# Without cert = only shares
+@public_share {
+	path /share/*
+	# path /api/asset/view/*
+	# path /api/asset/thumbnail/*
+	path /api/auth/validateToken
+	method GET HEAD POST
+}
+handle @public_share {
+	reverse_proxy localhost:2283
+}
+
+# Deny everything else
+handle {
+	respond "Forbidden" 403
+}

@@ -7,8 +7,8 @@ The diagram below describes the architecture of the immich RPi server and how di
 ## Glossary
 
 - **[Raspberry Pi (RPi)](https://www.raspberrypi.com/)**: A small and cheap single-board computer.
-- **Immich**: The code that runs on our RPi providing photo management features.
+- **Immich**: The code that runs on the RPi providing photo management features.
 - **External drive**: A Solid State Drive (SSD) or Hard Disk Drive (HDD) with a USB interface.
 - **Cloud storage**: A storage service provided by third parties such as Proton Drive, Backblaze, GCP, AWS, etc.
 - **`rclone`/`rustic`**: Programs that facilitate backups to cloud storage.
-- **`tailscale`**: VPN that allows our server to be reachable from anywhere.
+- **`tailscale`**: VPN that allows the server to be reachable from anywhere.

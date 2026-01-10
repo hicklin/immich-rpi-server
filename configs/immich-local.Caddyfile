@@ -1,0 +1,18 @@
+# Caddy configuration for local/VPN access.
+# This configuration filters access based on IPs.
+# All tailscale IPs and all 192.168.0.* IPs are accepted and grated FULL immich access.
+
+@trusted_ips {
+	remote_ip 100.64.0.0/10    # All Tailscale
+	remote_ip 192.168.0.0/24   # LAN - May need to be modified for your specific setup
+}
+
+handle @trusted_ips {
+	# Full reverse proxy for trusted IPs
+	reverse_proxy localhost:2283
+}
+			
+# Deny everything else
+handle {
+	respond "Forbidden" 403
+}
