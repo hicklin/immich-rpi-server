@@ -20,6 +20,10 @@ in {
         gen-mtls-certs # Helper script to generate mTLS client certs
     ];
 
+    environment.sessionVariables = {
+        IMMICH_CERTS_DIR = "/var/lib/immich-certs";
+    };
+
     services.caddy = {
         enable = true;
         logFormat = lib.mkForce "level DEBUG";

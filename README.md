@@ -25,6 +25,10 @@ This project aims to provide a low-cost and simple way to set up and run an [Imm
 
 This projects comes with a [book](https://hicklin.github.io/immich-rpi-nix/) to explain and guide how to setup, run and maintain an immich server on a Raspberry Pi.
 
+## How to use this repository
+
+This project contains setup configuration files which you may need to modify for your setup. The best practice is to fork this repository to keep track of your changes.
+
 ## Contributing
 
 Contributions and suggestions are welcome! If you'd like to contribute, please open a detailed pull request describing your changes and the problem they solve. For bug reports, feature requests, or questions, please open an issue with relevant context, steps to reproduce, and your system configuration.
