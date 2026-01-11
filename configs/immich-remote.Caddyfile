@@ -5,6 +5,15 @@
 # This configurations only allows full server access if a valid mTLS cert is provided, otherwise,
 # only access is limited to photo sharing APIs.
 
+# Deny access to IPs banned by fail2ban
+@banned {
+	remote_ip 198.51.100.1 # random IP address because it the list is empty, everything is blocked
+    import /var/lib/caddy/banlist
+}
+handle @banned {
+	respond  "Access Denied by Fail2ban" 403
+}
+
 # Define client certificate validation
 tls /var/lib/caddy/cert.pem /var/lib/caddy/key.pem {
 	client_auth {

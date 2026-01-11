@@ -26,7 +26,20 @@ in {
 
     services.caddy = {
         enable = true;
-        logFormat = lib.mkForce "level DEBUG";
+        # This config requires connections from tailscale IPs to provide a proxy protocol header. 
+        # This allows caddy to see the original IP of connection coming through the tailscale funnel.
+        # This is required for IP banning to work.
+        globalConfig = ''
+            servers {
+                listener_wrappers {
+                    proxy_protocol {
+                        allow 100.64.0.0/10
+                        fallback_policy require
+                    }
+                    tls
+                }
+            }
+        '';
         virtualHosts = {
             # PUBLIC ENDPOINT (via Tailscale Funnel):
             # `tailscale funnel --bg --tcp 443 tcp://localhost:8443`
@@ -49,46 +62,6 @@ in {
         extraGroups = [ "users" ];
     };
 
-    # services.fail2ban = {
-    #     enable = true;
-    #     jails = {
-    #         # Jail 1: Caddy endpoint blocking
-    #         caddy-nocert.settings = {
-    #             filter = caddy-nocert
-    #             backend = systemd
-    #             journalmatch = _SYSTEMD_UNIT=caddy.service
-    #             maxretry = 5
-    #             findtime = 300
-    #             bantime = 86400
-    #             action = iptables-allports[name=immich-403]
-    #         };
-            
-    #         # Jail 2: Immich share password brute force
-    #         immich-share-auth.settings = {
-    #             filter = immich-share-auth
-    #             backend = systemd
-    #             journalmatch = _SYSTEMD_UNIT=immich-server.service
-    #             maxretry = 5
-    #             findtime = 300
-    #             bantime = 86400
-    #             action = iptables-allports[name=immich-share]
-    #         };
-    #     };
-    # };
-
-    # environment.etc."fail2ban/filter.d/immich-nocert.conf".text = ''
-    #     [Definition]
-    #     failregex = ^<HOST> - .* 403 .*$
-    #     ignoreregex =
-    # '';
-
-    # # Todo regex
-    # environment.etc."fail2ban/filter.d/immich-share-auth.conf".text = ''
-    #     [Definition]
-    #     failregex = ^.*Invalid.*password.*share.*<HOST>.*$
-    #     ignoreregex =
-    # '';
-
     # Immich only listens on localhost
     services.immich.host = "127.0.0.1";
     
@@ -98,11 +71,95 @@ in {
         allowedUDPPorts = [ config.services.tailscale.port ];
         
         # Allow local network access to Caddy
-        interfaces.tailscale0.allowedTCPPorts = [ 8444 ];
-        interfaces.end0.allowedTCPPorts = [ 8444 8443 ];  # LAN interface
+        interfaces.end0.allowedTCPPorts = [ 8443 ];  # LAN interface
+        # Use below if enabling PRIVATE ENDPOINT
+        # interfaces.tailscale0.allowedTCPPorts = [ 8444 ];
+        # interfaces.end0.allowedTCPPorts = [ 8444 8443 ];  # LAN interface
     };
     
     # Tailscale configuration
     services.tailscale.useRoutingFeatures = "server";
     
+    # ensure the banlist file exists
+    systemd.tmpfiles.rules = [
+        "f /var/lib/caddy/banlist 0644 root root - -"
+    ];
+
+    # allow fail2ban to write to the caddy directory
+    systemd.services.fail2ban.serviceConfig = {
+        ReadWritePaths = [ "/var/lib/caddy" ];
+    };
+    
+    # fail2ban action: Add banned IP to caddy ban list and reload caddy
+    environment.etc."fail2ban/action.d/caddy-ban.conf".text = ''
+        [Definition]
+        actionban = echo "remote_ip <ip>" >> /var/lib/caddy/banlist && systemctl reload caddy
+        # Read file -> remove IP -> save to TMP -> Overwrite original file -> Reload
+        # We avoid 'sed -i' because it tries to create a temp file inside /var/lib/caddy
+        actionunban = sed "/remote_ip <ip>/d" /var/lib/caddy/banlist > /tmp/banlist.tmp && cat /tmp/banlist.tmp > /var/lib/caddy/banlist && systemctl reload caddy
+    '';
+
+    # fail2ban filter: Unauthorised access (401) - Protects against password brute-force
+    environment.etc."fail2ban/filter.d/unauthorised.conf".text = ''
+        [Definition]
+        failregex = ^.*"client_ip":"<HOST>".*"status":401.*$
+        datepattern = "Date":\["%%a, %%d %%b %%Y %%H:%%M:%%S %%Z"\]
+        ignoreregex =
+    '';
+
+    # fail2ban filter: Forbidden access (403) - Protects against API/URI scanning
+    environment.etc."fail2ban/filter.d/forbidden.conf".text = ''
+        [Definition]
+        failregex = ^.*"client_ip":"<HOST>".*"status":403.*$
+        datepattern = "Date":\["%%a, %%d %%b %%Y %%H:%%M:%%S %%Z"\]
+        ignoreregex =
+    '';
+
+    # fail2ban filter: Not found (404) - Protects against API/URI scanning
+    environment.etc."fail2ban/filter.d/not-found.conf".text = ''
+        [Definition]
+        failregex = ^.*"client_ip":"<HOST>".*"status":404.*$
+        datepattern = "Date":\["%%a, %%d %%b %%Y %%H:%%M:%%S %%Z"\]
+        ignoreregex =
+    '';
+
+    services.fail2ban = {
+        enable = true;
+        jails = {
+            # Jail 1: Unauthorised access
+            unauthorised.settings = {
+                enabled = true;
+                filter = "unauthorised";
+                action = "caddy-ban";
+                logpath = "/var/log/caddy/access-:8443.log";
+                backend = "polling";
+                maxretry = 20;
+                findtime = 300;
+                bantime = 43200;
+            };            
+            # Jail 2: Forbidden access
+            forbidden.settings = {
+                enabled = true;
+                filter = "forbidden";
+                action = "caddy-ban";
+                logpath = "/var/log/caddy/access-:8443.log";
+                backend = "polling";
+                maxretry = 20;
+                findtime = 300;
+                bantime = 43200;
+            };            
+            # Jail 3: Not Found
+            not-found.settings = {
+                enabled = true;
+                filter = "not-found";
+                action = "caddy-ban";
+                logpath = "/var/log/caddy/access-:8443.log";
+                backend = "polling";
+                maxretry = 20;
+                findtime = 300;
+                bantime = 43200;
+            };            
+        };
+    };
+
 }
