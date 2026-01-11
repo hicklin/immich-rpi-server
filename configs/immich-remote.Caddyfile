@@ -24,14 +24,26 @@ handle @authenticated {
 }
 
 # Without cert = only shares
-@public_share {
-	path /share/*
-	# path /api/asset/view/*
-	# path /api/asset/thumbnail/*
-	path /api/auth/validateToken
+@root_files {
+    path_regexp ^/[^/]+\.\w+$
+    method GET HEAD POST
+}
+handle @root_files {
+	reverse_proxy localhost:2283
+}
+@share_api {
+	path /_app/* # immich app files
+	path /s/* # shortened share API
+	path /share/* # share API
+	path /api/assets/* # information about asset location
+	path /api/shared-links/* # share API
+	path /api/server/features # list of server features
+	path /api/server/config # server configuration information
+	path /api/server/media-types # list of media types
+	path /api/auth/validateToken # API key verification API
 	method GET HEAD POST
 }
-handle @public_share {
+handle @share_api {
 	reverse_proxy localhost:2283
 }
 
