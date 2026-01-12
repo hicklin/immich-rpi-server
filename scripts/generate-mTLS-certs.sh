@@ -1,7 +1,7 @@
 set -e
 
 CLIENT_NAME=""
-CA_PATH=$(pwd)
+CA_PATH="/var/lib/certs"
 CA_CRT="ca-cert.pem"
 CA_KEY="ca-key.pem"
 
@@ -113,6 +113,7 @@ openssl pkcs12 -export \
   -name "$CLIENT_NAME"
 
 chmod 600 $CLIENT_NAME.crt $CLIENT_NAME.csr $CLIENT_NAME.key $CLIENT_NAME.p12
+chown ${SUDO_USER}:users $CLIENT_NAME.crt $CLIENT_NAME.csr $CLIENT_NAME.key $CLIENT_NAME.p12
 
 echo "Generated:"
 echo "  - $CLIENT_NAME.crt (certificate)"

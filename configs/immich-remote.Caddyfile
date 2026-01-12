@@ -15,12 +15,12 @@ handle @banned {
 }
 
 # Define client certificate validation
-tls /var/lib/caddy/cert.pem /var/lib/caddy/key.pem {
+tls /var/lib/certs/cert.pem /var/lib/certs/key.pem {
 	client_auth {
 		# DO NOT set to require, otherwise any cert will pass authentication
 		mode verify_if_given
 		trust_pool file {
-			pem_file /var/lib/immich-certs/ca-cert.pem
+			pem_file /var/lib/certs/ca-cert.pem
 		}
 	}
 }

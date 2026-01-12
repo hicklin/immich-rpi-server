@@ -20,10 +20,6 @@ in {
         gen-mtls-certs # Helper script to generate mTLS client certs
     ];
 
-    environment.sessionVariables = {
-        IMMICH_CERTS_DIR = "/var/lib/immich-certs";
-    };
-
     services.caddy = {
         enable = true;
         # This config requires connections from tailscale IPs to provide a proxy protocol header. 
