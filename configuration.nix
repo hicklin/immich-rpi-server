@@ -62,6 +62,8 @@ in {
     git
     cryptsetup
     rustic
+    jq
+    openssl
     vim # basic file editing
     tmux # terminal multiplexer
     bat # cat with wings

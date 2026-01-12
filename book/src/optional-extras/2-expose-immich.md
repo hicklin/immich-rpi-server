@@ -70,10 +70,17 @@ Create a certificate authority on the immich server that will generate mTLS cert
 The reverse proxy, caddy, it's filters and fail2ban described above are all preconfigured in the `expose-immich.nix` configuration file.
 
 1. Go to the `improts` section of `configuration.nix`, comment out `./lan-immich.nix` and comment in `./expose-immich.nix`.
-2. `sudo nixos-rebuild switch`
+2. Rebuild. Note that caddy will fail to start until we run the next step.
+   ```bash
+   sudo nixos-rebuild switch
+   ```
 3. Set owner of the certs directory to caddy.
    ```bash
    sudo chown -R caddy:caddy $CERT_DIR
+   ```
+4. Restart caddy
+   ```bash
+   sudo systemctl restart caddy
    ```
 
 ### 5. Open sever to the internet

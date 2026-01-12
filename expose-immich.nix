@@ -14,9 +14,7 @@ in {
     }];
 
     environment.systemPackages = with pkgs; [
-        openssl
         nss
-        jq
         gen-mtls-certs # Helper script to generate mTLS client certs
     ];
 
