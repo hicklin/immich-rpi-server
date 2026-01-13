@@ -13,8 +13,8 @@ in {
 
   imports = [
     ./zsh.nix
-    # ./lan-immich.nix
-    ./expose-immich.nix
+    ./lan-immich.nix
+    # ./expose-immich.nix
   ];
   
   boot = {

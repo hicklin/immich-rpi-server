@@ -111,8 +111,12 @@ This will generate
 
 #### Immich app
 
-1. Transfer the generate `.p12` file to you phone.
-2. ...
+1. Transfer the generate `.p12` file to your phone.
+2. Sign-out of the app.
+3. Enter the new https tailscale URL. DO NOT tap on login.
+4. Add your mTLS cert in setting (gear icon) > Advanced:
+   1. Toggle "Allow self-signed SSL certificates".
+   2. Import the certificate it SSL client certificate.
 
 #### Browser
 
@@ -120,7 +124,6 @@ Assuming a chrome based browser such as brave, chrome ect.
 
 1. Add .p12 cert to you browser at `brave://certificate-manager/clientcerts/platformclientcerts`.
 2. Access your server using the tailscale URL and select the certificate when prompted.
-
 
 ## Monitor
 
